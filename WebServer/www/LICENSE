@@ -1,0 +1,2 @@
+No file extension, so mimetypes.guess_type returns nothing and your
+server must fall back to application/octet-stream.
