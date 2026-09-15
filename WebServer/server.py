@@ -36,7 +36,7 @@ def parse_args(argv):
     args = args_parser.parse_args() #store parsed arguments in args object
 
     
-    return args_parser
+    return args
 
 
 
@@ -114,8 +114,20 @@ def main(argv=None):
     # Given. The grading script reads this line to find your server, so print it
     # exactly as written, immediately after listen(), and keep flush=True.
     #     print("Listening on port %d" % listener.getsockname()[1], flush=True)
-    raise NotImplementedError
+
+    args=parse_args(argv)
+    server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
+    server_socket.bind(("127.0.0.1",args.port)) #bind the socket to ip address 127.0.0.1 and given port number
+    server_socket.listen(1) 
+    print("Listening on port %d" % server_socket.getsockname()[1], flush=True)
+
+    while 1: #keep accepting clients and handling them
+        client, address = server_socket.accept() #wait until a client connects to the server
+        handle_connection(client, args.root) #pass the client over to handle_connection
+    
 
 
 if __name__ == "__main__":
     main()
+
+   
