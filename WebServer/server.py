@@ -25,7 +25,19 @@ def parse_args(argv):
     (directory), --workers (int, how many threads the pool starts with,
     default 8). Accept --workers from task 1 even though nothing uses it until
     task 5: every command in the handout passes it."""
-    raise NotImplementedError
+
+    args_parser = argparse.ArgumentParser() #create an argument parser object
+
+    #parse the arguments
+    args_parser.add_argument("--port", action=None, type=int,required=True)
+    args_parser.add_argument("--root",action=None, required=True)
+    args_parser.add_argument("--workers",action=None, type=int, default=8)
+
+    args = args_parser.parse_args() #store parsed arguments in args object
+
+    
+    return args_parser
+
 
 
 def recv_request_head(conn):

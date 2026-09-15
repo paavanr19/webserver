@@ -1,4 +1,4 @@
-# Name: <your full name>   Student number: <your student number>
+# Name: <Paavan Randhawa>   Student number: <301614138>
 """CMPT 371 Project 1 - HTTP/1.1 client on a raw TCP socket.
 
 Usage: python3 client.py --host H --port P --path /a [--path /b] [--out FILE ...]
