@@ -63,7 +63,42 @@ def resolve_path(root, target):
     Return None if the target is malformed.
     All three rules are graded: /index.html?x=1 and /index.html are the same
     file, / is that directory's index.html, and /page/sub.html works."""
-    raise NotImplementedError
+
+    #drop any query string
+    target.split('?')[0] #remove anything after ?
+
+    #percent decode
+    decoded_target = '' #will eventually contain the decoded target
+    hexchar = '' #will be filled with the hex characters after a percent sign
+    str_length = len(target) #length of original target
+
+
+    #decode percent-encoded characters
+    i = 0
+    while i < str_length:
+        if target[i] == '%':
+            #first, fill hexchar variable with the two characters following %
+            hexchar += target[i + 1] 
+            hexchar += target[i + 2]
+            
+            #check if the hex characters are valid
+            try:
+                decoded_hex = int(hexchar,16)
+            except ValueError:
+                return None #malformed target detected
+            
+            decoded_target += chr(decoded_hex) #add decoded characters to decoded_target string
+            i+=2 #advance the index by 2
+        else:
+            decoded_target+=target[i]  #else keep copying characters
+
+
+        #append index.html for a target ending in '/'
+        if decoded_target[str_length-1] == '/':
+            decoded_target += 'index.html'
+
+        return os.path.join(root,decoded_target)
+            
 
 
 def build_response(status, reason, body, content_type, extra=None):
@@ -83,6 +118,17 @@ def handle_request(head, root):
     from the file extension. Task 3: 400 (malformed request line or header line,
     no Host), 405 (POST and the other known methods, with Allow: GET, HEAD) and
     501 (a token that is not an HTTP method)."""
+
+    #convert bytes to string and split on whitespace
+    tokens = head.decode().split()
+    method = tokens[0] 
+    target = tokens[1]
+    http_version = tokens[2]
+
+    path=resolve_path(root,target)
+    
+
+
     raise NotImplementedError
 
 
@@ -94,7 +140,12 @@ def handle_connection(conn, root):
     recv_request_head. Task 5: after each response, increment requests_served
     under counter_lock and print 'served <n>' to stderr, where n is the value
     this request produced, read inside the same lock that incremented it."""
-    raise NotImplementedError
+
+    message = conn.recv(4096) #receive up to 4096 bytes from client
+    response = handle_request(message,root) #send message received to handle_request
+    conn.sendall(response) #send the response back
+
+
 
 
 def worker(work_queue, root):
