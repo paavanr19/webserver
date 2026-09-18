@@ -125,11 +125,30 @@ def handle_request(head, root):
     target = tokens[1]
     http_version = tokens[2]
 
-    path=resolve_path(root,target)
+    path=resolve_path(root,target) #build a proper path
     
+    if path is None:
+        #build in task 3
+    else:
+        if not (os.path.isfile(path)): #file not found, build 404 response
+            status=404 
+            reason="Not Found"
+            body="404 Not Found"
+            content_type,encoding=mimetypes.guess_type(path)
+            return build_response(status,reason,body,content_type)
 
+        else:
+            #build a 200 response
+            status=200
+            reason="OK"
+            
+            #open file and read contents and place them in body variable
+            opened_file=open(path,"rb")
+            body=opened_file.read()
+            opened_file.close()
 
-    raise NotImplementedError
+            content_type, encoding=mimetypes.guess_type(path)
+            return build_response(status,reason,body,content_type)
 
 
 def handle_connection(conn, root):
