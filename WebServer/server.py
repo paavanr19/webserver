@@ -65,7 +65,7 @@ def resolve_path(root, target):
     file, / is that directory's index.html, and /page/sub.html works."""
 
     #drop any query string
-    target.split('?')[0] #remove anything after ?
+    target=target.split('?')[0] #remove anything after ?
 
     #percent decode
     decoded_target = '' #will eventually contain the decoded target
@@ -76,10 +76,11 @@ def resolve_path(root, target):
     #decode percent-encoded characters
     i = 0
     while i < str_length:
-        if target[i] == '%':
+        if target[i] == '%': 
+            if (i+2)>=str_length: #first check if there are two characters after the percent sign
+                return None
             #first, fill hexchar variable with the two characters following %
-            hexchar += target[i + 1] 
-            hexchar += target[i + 2]
+            hexchar = target[i + 1] + target[i + 2]
             
             #check if the hex characters are valid
             try:
@@ -88,16 +89,17 @@ def resolve_path(root, target):
                 return None #malformed target detected
             
             decoded_target += chr(decoded_hex) #add decoded characters to decoded_target string
-            i+=2 #advance the index by 2
+            i+=3 #advance the index by 3
         else:
             decoded_target+=target[i]  #else keep copying characters
+            i+=1 #move to next character 
 
 
         #append index.html for a target ending in '/'
-        if decoded_target[str_length-1] == '/':
-            decoded_target += 'index.html'
+    if decoded_target[-1] == '/':
+        decoded_target += 'index.html'
 
-        return os.path.join(root,decoded_target)
+    return os.path.join(root,decoded_target)
             
 
 
