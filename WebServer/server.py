@@ -99,7 +99,9 @@ def resolve_path(root, target):
     if decoded_target[-1] == '/':
         decoded_target += 'index.html'
 
-    return os.path.join(root,decoded_target)
+   
+    path=os.path.join(root, decoded_target.lstrip('/'))
+    return path
             
 
 
@@ -115,18 +117,19 @@ def build_response(status, reason, body, content_type, extra=None):
     status=status.encode()
     reason=reason.encode()
     content_type=content_type.encode()
-    date=email.utils.formatdate(usegmt=True).encode()
+    date=formatdate(usegmt=True).encode()
     server_string="cmpt371/1.0".encode()
     content_length=str(len(body)).encode()
     connection_header="keep-alive".encode()
 
-    response = "HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    #build the entire response in bytes
+    response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
-    + "Server ".encode() + server_string + "\r\n".encode()
+    + "Server: ".encode() + server_string + "\r\n".encode()
     + "Content-Type: ".encode() + content_type + "\r\n".encode()
     + "Content-Length: ".encode() + content_length + "\r\n".encode()
     + "Connection: ".encode() + connection_header + "\r\n".encode()
-    + "\r\n".encode() + body
+    + "\r\n".encode() + body)
 
     return response
 
@@ -137,6 +140,7 @@ def build_response(status, reason, body, content_type, extra=None):
 
 
 def handle_request(head, root):
+    #print("handle_request called", flush=True)
     """TASK 1, extended in tasks 2 and 3. Turn one header block into a complete
     response.
     Task 1: 200 and 404. Task 2: HEAD, which carries no body, and Content-Type
@@ -153,7 +157,7 @@ def handle_request(head, root):
     path=resolve_path(root,target) #build a proper path
 
     if not (os.path.isfile(path)): #file not found, build 404 response
-            status=404 
+            status=str(404)
             reason="Not Found"
             body="404 Not Found".encode()
             content_type,encoding=mimetypes.guess_type(path)
@@ -161,7 +165,7 @@ def handle_request(head, root):
 
     else:
             #build a 200 response
-            status=200
+            status=str(200)
             reason="OK"
             
             #open file and read contents and place them in body variable
