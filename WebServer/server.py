@@ -110,7 +110,30 @@ def build_response(status, reason, body, content_type, extra=None):
     Every response goes through here, including 404, 400, 405 and 501, so every
     response carries all five headers. Content-Length is the number of body
     bytes that follow, and nothing else."""
-    raise NotImplementedError
+
+    #convert strings to bytes
+    status=status.encode()
+    reason=reason.encode()
+    content_type=content_type.encode()
+    date=email.utils.formatdate(usegmt=True).encode()
+    server_string="cmpt371/1.0".encode()
+    content_length=str(len(body)).encode()
+    connection_header="keep-alive".encode()
+
+    response = "HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    + "Date: ".encode() + date + "\r\n".encode()
+    + "Server ".encode() + server_string + "\r\n".encode()
+    + "Content-Type: ".encode() + content_type + "\r\n".encode()
+    + "Content-Length: ".encode() + content_length + "\r\n".encode()
+    + "Connection: ".encode() + connection_header + "\r\n".encode()
+    + "\r\n".encode() + body
+
+    return response
+
+
+
+
+
 
 
 def handle_request(head, root):
@@ -128,18 +151,15 @@ def handle_request(head, root):
     http_version = tokens[2]
 
     path=resolve_path(root,target) #build a proper path
-    
-    if path is None:
-        #build in task 3
-    else:
-        if not (os.path.isfile(path)): #file not found, build 404 response
+
+    if not (os.path.isfile(path)): #file not found, build 404 response
             status=404 
             reason="Not Found"
-            body="404 Not Found"
+            body="404 Not Found".encode()
             content_type,encoding=mimetypes.guess_type(path)
             return build_response(status,reason,body,content_type)
 
-        else:
+    else:
             #build a 200 response
             status=200
             reason="OK"
@@ -151,6 +171,11 @@ def handle_request(head, root):
 
             content_type, encoding=mimetypes.guess_type(path)
             return build_response(status,reason,body,content_type)
+
+    
+    
+        
+        
 
 
 def handle_connection(conn, root):
