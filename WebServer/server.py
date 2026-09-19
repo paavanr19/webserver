@@ -122,16 +122,29 @@ def build_response(status, reason, body, content_type, extra=None):
     content_length=str(len(body)).encode()
     connection_header="keep-alive".encode()
 
-    #build the entire response in bytes
-    response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    
+    if (extra=="GET"):
+        #build the entire response in bytes
+        response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
     + "Server: ".encode() + server_string + "\r\n".encode()
     + "Content-Type: ".encode() + content_type + "\r\n".encode()
     + "Content-Length: ".encode() + content_length + "\r\n".encode()
     + "Connection: ".encode() + connection_header + "\r\n".encode()
     + "\r\n".encode() + body)
+        return response
+    elif (extra=="HEAD"):
+        #build the entire response in bytes and omit body
+        response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    + "Date: ".encode() + date + "\r\n".encode()
+    + "Server: ".encode() + server_string + "\r\n".encode()
+    + "Content-Type: ".encode() + content_type + "\r\n".encode()
+    + "Content-Length: ".encode() + content_length + "\r\n".encode()
+    + "Connection: ".encode() + connection_header + "\r\n".encode()
+    + "\r\n".encode())
+        return response
 
-    return response
+
 
 
 
@@ -156,14 +169,15 @@ def handle_request(head, root):
 
     path=resolve_path(root,target) #build a proper path
 
-    if not (os.path.isfile(path)): #file not found, build 404 response
+    if (method == "GET"):
+        if not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
             body="404 Not Found\n".encode()
             content_type,encoding=mimetypes.guess_type(path)
-            return build_response(status,reason,body,content_type)
+            return build_response(status,reason,body,content_type,"GET")
 
-    else:
+        else:
             #build a 200 response
             status=str(200)
             reason="OK"
@@ -174,8 +188,28 @@ def handle_request(head, root):
             opened_file.close()
 
             content_type, encoding=mimetypes.guess_type(path)
-            return build_response(status,reason,body,content_type)
+            return build_response(status,reason,body,content_type,"GET")
 
+    elif (method=="HEAD"):
+        if not (os.path.isfile(path)): #file not found, build 404 response
+            status=str(404)
+            reason="Not Found"
+            body="404 Not Found\n".encode()
+            content_type,encoding=mimetypes.guess_type(path)
+            return build_response(status,reason,body,content_type,"HEAD")
+
+        else:
+            #build a 200 response
+            status=str(200)
+            reason="OK"
+            
+            #open file and read contents and place them in body variable
+            opened_file=open(path,"rb")
+            body=opened_file.read()
+            opened_file.close()
+            content_type, encoding=mimetypes.guess_type(path)
+            return build_response(status,reason,body,content_type,"HEAD")
+    
     
     
         
