@@ -159,7 +159,7 @@ def handle_request(head, root):
     if not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
-            body="404 Not Found".encode()
+            body="404 Not Found\n".encode()
             content_type,encoding=mimetypes.guess_type(path)
             return build_response(status,reason,body,content_type)
 
