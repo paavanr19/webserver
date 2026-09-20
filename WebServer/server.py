@@ -89,7 +89,36 @@ def parse_request(head):
     headers is a dict with lower-cased names. Raise ValueError if the request
     line is not three fields or a header line has no colon; handle_request turns
     that into a 400."""
-    raise NotImplementedError
+
+    http_request = head.decode()
+    http_request=http_request.split("\r\n")
+    request_line=http_request[0]
+    tokenized_request_line=request_line.split()
+    if len(tokenized_request_line)!=3:
+        raise ValueError
+    method=tokenized_request_line[0]
+    target=tokenized_request_line[1]
+    version=tokenized_request_line[2]
+
+
+    headers_dict={}
+    for header in http_request[1:-1]:
+        if ":" not in header:
+            raise ValueError
+        else:
+            header_title=header.split(":",1)[0]
+            header_value=header.split(":",1)[1]
+            header_title=header_title.lower()
+            headers_dict[header_title]=header_value
+
+
+    if "host" not in headers_dict:
+        raise ValueError
+    return method,target,version,headers_dict
+            
+
+
+
 
 
 def resolve_path(root, target):
