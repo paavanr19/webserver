@@ -64,6 +64,40 @@ def read_head(sock, pending):
 def parse_head(head):
     """TASK 4. Split a response head into (status_code, reason, headers).
     headers is a dict with lower-cased names."""
+
+    head=head.decode()
+    response_lines=head.split("\r\n\r\n")[0] #cut off body
+    response=response_lines.split("\r\n") 
+    response_line_1=response[0].split(" ")
+    status_code=response_line_1[1]
+    reason=""
+    i=2
+
+    #get the reason
+    while i<(len(response_line_1)):
+        reason+=response_line_1[i]
+        if (i != (len(response_line_1))-1):
+            reason+=" "
+        i+=1
+    
+    headers_dict={}
+
+    header_lines=response[1:]
+    for header in header_lines:
+        if (len(header)==0):
+            continue
+        header_title=header.split(":",1)[0]
+        header_value=header.split(":",1)[1]
+        header_title=header_title.lower()
+        headers_dict[header_title]=header_value
+    
+    return status_code,reason,headers_dict
+
+
+    
+
+
+
     raise NotImplementedError
 
 
