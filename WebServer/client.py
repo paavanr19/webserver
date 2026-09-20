@@ -98,7 +98,6 @@ def parse_head(head):
 
 
 
-    raise NotImplementedError
 
 
 def read_body(sock, length, pending):
