@@ -175,6 +175,8 @@ def handle_request(head, root):
             reason="Not Found"
             body="404 Not Found\n".encode()
             content_type,encoding=mimetypes.guess_type(path)
+            if (content_type==None):
+                content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"GET")
 
         else:
@@ -188,6 +190,8 @@ def handle_request(head, root):
             opened_file.close()
 
             content_type, encoding=mimetypes.guess_type(path)
+            if (content_type==None):
+                content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"GET")
 
     elif (method=="HEAD"):
@@ -196,6 +200,8 @@ def handle_request(head, root):
             reason="Not Found"
             body="404 Not Found\n".encode()
             content_type,encoding=mimetypes.guess_type(path)
+            if (content_type==None):
+                content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"HEAD")
 
         else:
@@ -208,6 +214,8 @@ def handle_request(head, root):
             body=opened_file.read()
             opened_file.close()
             content_type, encoding=mimetypes.guess_type(path)
+            if (content_type==None):
+                content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"HEAD")
     
     
