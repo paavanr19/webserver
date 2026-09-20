@@ -68,6 +68,7 @@ def recv_request_head(conn):
                     return None
                 else:
                     message+=message_received
+                    requests_dict[conn]=message
         else:
             message="".encode()
             message_received=conn.recv(4096)
@@ -75,6 +76,7 @@ def recv_request_head(conn):
                 return None
             else:
                 message+=message_received
+                requests_dict[conn]=message
 
 
 
@@ -103,7 +105,9 @@ def parse_request(head):
 
     headers_dict={}
     for header in http_request[1:-1]:
-        if ":" not in header:
+        if len(header)==0:
+            continue
+        elif ":" not in header:
             raise ValueError
         else:
             header_title=header.split(":",1)[0]
