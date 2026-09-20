@@ -12,13 +12,30 @@ import sys
 def parse_args(argv):
     """TASK 4. Parse --host (default 127.0.0.1), --port (int), --path
     (repeatable), --out (repeatable, paired with --path in order)."""
-    raise NotImplementedError
+    args_parser = argparse.ArgumentParser() #create an argument parser object
+
+    #parse the arguments
+    args_parser.add_argument("--host", action=None, type=str,default="127.0.0.1")
+    args_parser.add_argument("--port", action=None, type=int, required=True)
+    args_parser.add_argument("--path", action="append",type=str,required=True)
+    args_parser.add_argument("--out",action="append",type=str,required=True)
+
+    args = args_parser.parse_args(argv) #store parsed arguments in args object
+    return args
 
 
 def send_request(sock, host, path):
     """TASK 4. Send one GET request line, a Host header, and the blank line
     that ends it."""
-    raise NotImplementedError
+
+    #build request
+    request = "GET "+path+" HTTP/1.1\r\n"
+    host_line="Host: "+host+"\r\n\r\n"
+    full_request=request+host_line #combine both lines
+    full_request=full_request.encode() #encode request in bytes
+
+    sock.sendall(full_request) #send request
+
 
 
 def read_head(sock, pending):
@@ -52,6 +69,20 @@ def main(argv=None):
     Return 0 on success. All the paths travel over the one connection, so
     whatever is left in the buffer past one body is the start of the next
     response."""
+
+    args=parse_args(argv)
+
+    client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
+    client_socket.connect((args.host,args.port)) #connect to the server socket
+
+    for i in range(len(args.path)):
+        #send the request
+        #read the head
+        #read exactly content-length bytes
+        #print <status> <reason> <n> bytes
+        #write the body to the matching --out file
+        #return 0 on success
+
     raise NotImplementedError
 
 

@@ -1,4 +1,4 @@
-# Name: <your full name>   Student number: <your student number>
+# Name: <Paavan Randhawa>   Student number: <301614138>
 """CMPT 371 Project 1 - static HTTP/1.1 server on raw TCP sockets.
 
 Usage: python3 server.py --port PORT --root DIR [--workers N]
@@ -20,7 +20,8 @@ requests_served = 0
 counter_lock = threading.Lock()
 
 #dictionary for client requests
-#the key is the client socket and the value is the leftover request
+#the key is the client socket and the value is the request
+#used to store leftover requests that will be processed later
 requests_dict={}
 
 
@@ -52,29 +53,29 @@ def recv_request_head(conn):
     what replaces that call, and is where reading becomes correct."""
     
     i=0
-    while 1:
-        if (conn in requests_dict):
-            message=requests_dict[conn]
-            if "\r\n\r\n".encode() in message:
+    while 1: #keep looping until no more requests are sent (b"" is received)
+        if (conn in requests_dict): #if the client has sent a request before, get the leftover request from the dictionary
+            message=requests_dict[conn] #fill message with the leftover request
+            if "\r\n\r\n".encode() in message: #if the full request is in the dictionary extract it
                 for i in range(len(message)):
-                    if message[i:i+4]=="\r\n\r\n".encode():
+                    if message[i:i+4]=="\r\n\r\n".encode(): #when end of request is found, split into request and leftover
                         return_value=message[:i+4]
                         leftover=message[i+4:]
                         requests_dict[conn]=leftover
                         return return_value
-            else:
+            else: #if the full request is not in the dictionary, keep receiving from the client
                 message_received=conn.recv(4096)
-                if (message_received==b""):
+                if (message_received==b""): #return None if the client has finished sending 
                     return None
                 else:
-                    message+=message_received
-                    requests_dict[conn]=message
-        else:
+                    message+=message_received #append received message to current message 
+                    requests_dict[conn]=message #store in the dictionary
+        else: #case where the client has not sent a message before
             message="".encode()
             message_received=conn.recv(4096)
-            if (message_received==b""):
+            if (message_received==b""): #if they didn't send anything, return None
                 return None
-            else:
+            else: #if they sent something, store it in message, and add it to the requests dictionary
                 message+=message_received
                 requests_dict[conn]=message
 
