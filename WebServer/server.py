@@ -268,9 +268,12 @@ def handle_connection(conn, root):
     under counter_lock and print 'served <n>' to stderr, where n is the value
     this request produced, read inside the same lock that incremented it."""
 
-    message = conn.recv(4096) #receive up to 4096 bytes from client
-    response = handle_request(message,root) #send message received to handle_request
-    conn.sendall(response) #send the response back
+    while 1:
+        message = recv_request_head(conn)
+        if message is None:
+            break
+        response = handle_request(message,root) #send message received to handle_request
+        conn.sendall(response) #send the response back
 
 
 
