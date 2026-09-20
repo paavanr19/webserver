@@ -160,7 +160,7 @@ def resolve_path(root, target):
 
 
         #append index.html for a target ending in '/'
-    if decoded_target[-1] == '/':
+    if len(decoded_target)!=0 and decoded_target[-1] == '/':
         decoded_target += 'index.html'
 
    
@@ -207,6 +207,26 @@ def build_response(status, reason, body, content_type, extra=None):
     + "Connection: ".encode() + connection_header + "\r\n".encode()
     + "\r\n".encode())
         return response
+    elif (extra=="error"):
+        response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    + "Date: ".encode() + date + "\r\n".encode()
+    + "Server: ".encode() + server_string + "\r\n".encode()
+    + "Content-Type: ".encode() + content_type + "\r\n".encode()
+    + "Content-Length: ".encode() + content_length + "\r\n".encode()
+    + "Connection: ".encode() + connection_header + "\r\n".encode()
+    + "\r\n".encode() + body)
+        return response
+    else:
+        response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
+    + "Date: ".encode() + date + "\r\n".encode()
+    + "Server: ".encode() + server_string + "\r\n".encode()
+    + "Content-Type: ".encode() + content_type + "\r\n".encode()
+    + "Content-Length: ".encode() + content_length + "\r\n".encode()
+    + "Connection: ".encode() + connection_header + "\r\n".encode() 
+    + extra.encode() + "\r\n".encode() + body)
+        return response
+
+
 
 
 
@@ -226,21 +246,41 @@ def handle_request(head, root):
     501 (a token that is not an HTTP method)."""
 
     #convert bytes to string and split on whitespace
-    tokens = head.decode().split()
-    method = tokens[0] 
-    target = tokens[1]
-    http_version = tokens[2]
+
+    try:
+        method,target,version,headers=parse_request(head)
+    except ValueError:
+        #handle 400 Bad Request
+        status=str(400)
+        reason="Bad Request"
+        body="400 Bad Request\n".encode()
+        response=build_response(status,reason,body,"text/plain","error")
+        return response
+
+
+    if method not in KNOWN_METHODS:
+        status=str(501)
+        reason="Not Implemented"
+        body="501 Not Implemented\n".encode()
+        content_type="text/plain"
+        return build_response(status,reason,body,content_type,"error")
+    if method in KNOWN_METHODS and method not in ["GET","HEAD"]:
+        status=str(405)
+        reason="Method Not Allowed"
+        body="405 Method Not Allowed\n".encode()
+        content_type="text/plain"
+        allow="Allow: GET, HEAD"
+        return build_response(status,reason,body,content_type,allow)
+   
 
     path=resolve_path(root,target) #build a proper path
 
     if (method == "GET"):
-        if not (os.path.isfile(path)): #file not found, build 404 response
+        if path is None or not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
             body="404 Not Found\n".encode()
-            content_type,encoding=mimetypes.guess_type(path)
-            if (content_type==None):
-                content_type="application/octet-stream"
+            content_type="text/plain"
             return build_response(status,reason,body,content_type,"GET")
 
         else:
@@ -259,13 +299,11 @@ def handle_request(head, root):
             return build_response(status,reason,body,content_type,"GET")
 
     elif (method=="HEAD"):
-        if not (os.path.isfile(path)): #file not found, build 404 response
+        if path is None or not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
             body="404 Not Found\n".encode()
-            content_type,encoding=mimetypes.guess_type(path)
-            if (content_type==None):
-                content_type="application/octet-stream"
+            content_type="text/plain"
             return build_response(status,reason,body,content_type,"HEAD")
 
         else:
@@ -341,3 +379,4 @@ if __name__ == "__main__":
     main()
 
    
+
