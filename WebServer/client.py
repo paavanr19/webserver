@@ -9,6 +9,7 @@ import socket
 import sys
 
 
+
 def parse_args(argv):
     """TASK 4. Parse --host (default 127.0.0.1), --port (int), --path
     (repeatable), --out (repeatable, paired with --path in order)."""
@@ -43,7 +44,21 @@ def read_head(sock, pending):
     Return (head_bytes, leftover) where leftover is body already received. The
     leftover is the start of the body and cannot be read again, so it must be
     counted toward Content-Length rather than discarded."""
-    raise NotImplementedError
+
+    while 1:
+        if "\r\n\r\n".encode() in pending: #full message has been received
+            for i in range (len(pending)):
+                if pending[i:i+4]=="\r\n\r\n".encode():
+                    headers=pending[:i+4]
+                    leftover=pending[i+4:]
+                    return headers, leftover
+        else:  # full message has not been received
+            response_received=sock.recv(4096)
+            if response_received == b"":
+                return None
+            else:
+                pending+=response_received
+    
 
 
 def parse_head(head):
