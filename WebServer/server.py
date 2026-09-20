@@ -19,6 +19,10 @@ KNOWN_METHODS = {"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "TR
 requests_served = 0
 counter_lock = threading.Lock()
 
+#dictionary for client requests
+#the key is the client socket and the value is the leftover request
+requests_dict={}
+
 
 def parse_args(argv):
     """TASK 1. Parse --port (int, 0 means pick any free port), --root
@@ -46,7 +50,38 @@ def recv_request_head(conn):
     if the client closed the connection first.
     In task 1 handle_connection may read the head with a single recv(); this is
     what replaces that call, and is where reading becomes correct."""
-    raise NotImplementedError
+    
+    i=0
+    while 1:
+        if (conn in requests_dict):
+            message=requests_dict[conn]
+            if "\r\n\r\n".encode() in message:
+                for i in range(len(message)):
+                    if message[i:i+4]=="\r\n\r\n".encode():
+                        return_value=message[:i+4]
+                        leftover=message[i+4:]
+                        requests_dict[conn]=leftover
+                        return return_value
+            else:
+                message_received=conn.recv(4096)
+                if (message_received==b""):
+                    return None
+                else:
+                    message+=message_received
+        else:
+            message="".encode()
+            message_received=conn.recv(4096)
+            if (message_received==b""):
+                return None
+            else:
+                message+=message_received
+
+
+
+
+
+
+    
 
 
 def parse_request(head):
