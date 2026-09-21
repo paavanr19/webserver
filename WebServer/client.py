@@ -119,7 +119,7 @@ def read_body(sock, length, pending):
                 pending+=received_msg
         else:
             while i<(length):
-                body+=pending[i]
+                body+=pending[i:i+1]
                 i+=1
         
 
@@ -137,15 +137,36 @@ def main(argv=None):
     client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
     client_socket.connect((args.host,args.port)) #connect to the server socket
 
+    pending="".encode()
     for i in range(len(args.path)):
-        #send the request
+        send_request(client_socket,args.host,args.path[i])
+        read_head_output=read_head(client_socket, pending)
+        if read_head_output is None:
+            return -1
+        headers,pending=read_head_output
+        status_code,reason,headers_dict=parse_head(headers)
+        content_length=int(headers_dict["content-length"])
+        read_body_output=read_body(client_socket,content_length,pending)
+        if read_body_output is None:
+            return -1
+        body,pending=read_body_output
+        print_str=status_code+" "+reason+" "+str(content_length)+" bytes"
+        print(print_str)
+        with open(args.out[i],"wb") as file:
+            file.write(body)
+    return 0
+
+
+
+
+
+        
         #read the head
         #read exactly content-length bytes
         #print <status> <reason> <n> bytes
         #write the body to the matching --out file
         #return 0 on success
 
-    raise NotImplementedError
 
 
 if __name__ == "__main__":
