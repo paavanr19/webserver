@@ -339,13 +339,17 @@ def handle_connection(conn, root):
     recv_request_head. Task 5: after each response, increment requests_served
     under counter_lock and print 'served <n>' to stderr, where n is the value
     this request produced, read inside the same lock that incremented it."""
-
+    global requests_served
     while 1:
         message = recv_request_head(conn)
         if message is None:
             break
         response = handle_request(message,root) #send message received to handle_request
         conn.sendall(response) #send the response back
+        with counter_lock:
+            requests_served+=1
+            mine=requests_served
+        print("served %d" % mine,file=sys.stderr,flush=True)
 
 
 
@@ -355,7 +359,13 @@ def worker(work_queue, root):
     Every worker thread runs this; none of them is created per connection.
     Nothing before task 5 calls this, and main must not start any worker threads
     until you write it."""
-    raise NotImplementedError
+    while 1:
+        client=work_queue.get()
+        handle_connection(client,root)
+        client.close()
+        
+
+
 
 
 def main(argv=None):
@@ -368,15 +378,23 @@ def main(argv=None):
     # exactly as written, immediately after listen(), and keep flush=True.
     #     print("Listening on port %d" % listener.getsockname()[1], flush=True)
 
+    workers_queue=queue.Queue()
+
     args=parse_args(argv)
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
     server_socket.bind(("127.0.0.1",args.port)) #bind the socket to ip address 127.0.0.1 and given port number
     server_socket.listen(1) 
     print("Listening on port %d" % server_socket.getsockname()[1], flush=True)
 
+    for i in range (args.workers):
+        thread = threading.Thread(target=worker, args=(workers_queue,args.root))
+        thread.start()
+    
+
     while 1: #keep accepting clients and handling them
         client, address = server_socket.accept() #wait until a client connects to the server
-        handle_connection(client, args.root) #pass the client over to handle_connection
+        workers_queue.put(client)
+        
     
 
 

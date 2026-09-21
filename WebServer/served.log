@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/pkr14/sfuhome/CMPT371/webserver/WebServer/server.py", line 402, in <module>
+    main()
+  File "/home/pkr14/sfuhome/CMPT371/webserver/WebServer/server.py", line 385, in main
+    server_socket.bind(("127.0.0.1",args.port)) #bind the socket to ip address 127.0.0.1 and given port number
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 98] Address already in use
