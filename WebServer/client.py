@@ -94,11 +94,6 @@ def parse_head(head):
     return status_code,reason,headers_dict
 
 
-    
-
-
-
-
 
 def read_body(sock, length, pending):
     """TASK 4. Return exactly length body bytes, counting what is already in
@@ -107,7 +102,26 @@ def read_body(sock, length, pending):
     Every check in task 4 runs against a server that holds the connection open
     for a full minute, so reading to EOF fails all four, not just the timing
     one."""
-    raise NotImplementedError
+
+    body="".encode()
+    temp_pending="".encode()
+    i=0
+    while 1:
+        if i==length:
+            temp_pending=pending[i:]
+            pending=temp_pending
+            return body,pending
+        if (len(pending))<length:
+            received_msg=sock.recv(4096)
+            if (received_msg==b""):
+                return None
+            else:
+                pending+=received_msg
+        else:
+            while i<(length):
+                body+=pending[i]
+                i+=1
+        
 
 
 def main(argv=None):
