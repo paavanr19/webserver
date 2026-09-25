@@ -71,13 +71,14 @@ def recv_request_head(conn):
                     message+=message_received #append received message to current message 
                     requests_dict[conn]=message #store in the dictionary
         else: #case where the client has not sent a message before
-            message="".encode()
+            #dictionary entry must be set up for possible future messages
+            message="".encode() #initial message buffer starts out empty
             message_received=conn.recv(4096)
             if (message_received==b""): #if they didn't send anything, return None
                 return None
             else: #if they sent something, store it in message, and add it to the requests dictionary
-                message+=message_received
-                requests_dict[conn]=message
+                message+=message_received #add the received message to the message buffer
+                requests_dict[conn]=message #create the dictionary entry with client connection and corresponding message(s)
 
 
 
@@ -93,11 +94,11 @@ def parse_request(head):
     line is not three fields or a header line has no colon; handle_request turns
     that into a 400."""
 
-    http_request = head.decode()
-    http_request=http_request.split("\r\n")
-    request_line=http_request[0]
-    tokenized_request_line=request_line.split()
-    if len(tokenized_request_line)!=3:
+    http_request = head.decode() #convert from bytes to string
+    http_request=http_request.split("\r\n") #split into separate lines
+    request_line=http_request[0] 
+    tokenized_request_line=request_line.split() #get individual elements from the request line (e.g: method, target, version (HTTP/1.1))
+    if len(tokenized_request_line)!=3:  #request line should only contain method, target and version
         raise ValueError
     method=tokenized_request_line[0]
     target=tokenized_request_line[1]
@@ -105,19 +106,19 @@ def parse_request(head):
 
 
     headers_dict={}
-    for header in http_request[1:-1]:
-        if len(header)==0:
+    for header in http_request[1:-1]: #skip first line and empty line at the end
+        if len(header)==0: #if the line is empty don't parse it 
             continue
-        elif ":" not in header:
-            raise ValueError
-        else:
+        elif ":" not in header: #invalid header line case
+            raise ValueError 
+        else:  #pearse header lines, convert to lower case, and add to the dictionary
             header_title=header.split(":",1)[0]
             header_value=header.split(":",1)[1]
             header_title=header_title.lower()
             headers_dict[header_title]=header_value
 
 
-    if "host" not in headers_dict:
+    if "host" not in headers_dict: #the header lines must contain a host header line
         raise ValueError
     return method,target,version,headers_dict
             
@@ -134,20 +135,20 @@ def resolve_path(root, target):
     file, / is that directory's index.html, and /page/sub.html works."""
 
     #drop any query string
-    target=target.split('?')[0] #remove anything after ?
+    target=target.split('?')[0] #chop off anything after ?
 
     #percent decode
     decoded_target = '' #will eventually contain the decoded target
-    hexchar = '' #will be filled with the hex characters after a percent sign
+    hexchar = '' #will be filled with the hex characters after a percent sign to decode
     str_length = len(target) #length of original target
 
 
     #decode percent-encoded characters
     i = 0
-    while i < str_length:
+    while i < str_length: #parse through string
         if target[i] == '%': 
             if (i+2)>=str_length: #first check if there are two characters after the percent sign
-                return None
+                return None #invalid if two characters dont follow the % sign
             #first, fill hexchar variable with the two characters following %
             hexchar = target[i + 1] + target[i + 2]
             
@@ -169,7 +170,7 @@ def resolve_path(root, target):
         decoded_target += 'index.html'
 
    
-    path=os.path.join(root, decoded_target.lstrip('/'))
+    path=os.path.join(root, decoded_target.lstrip('/'))  #put together the resolved path
     return path
             
 
@@ -192,7 +193,7 @@ def build_response(status, reason, body, content_type, extra=None):
     connection_header="keep-alive".encode()
 
     
-    if (extra=="GET"):
+    if (extra=="GET"): #special response for GET requetss
         #build the entire response in bytes
         response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
@@ -202,7 +203,7 @@ def build_response(status, reason, body, content_type, extra=None):
     + "Connection: ".encode() + connection_header + "\r\n".encode()
     + "\r\n".encode() + body)
         return response
-    elif (extra=="HEAD"):
+    elif (extra=="HEAD"): #special response for HEAD requests
         #build the entire response in bytes and omit body
         response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
@@ -212,7 +213,7 @@ def build_response(status, reason, body, content_type, extra=None):
     + "Connection: ".encode() + connection_header + "\r\n".encode()
     + "\r\n".encode())
         return response
-    elif (extra=="error"):
+    elif (extra=="error"): #special response for 400/501 requests 
         response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
     + "Server: ".encode() + server_string + "\r\n".encode()
@@ -221,7 +222,7 @@ def build_response(status, reason, body, content_type, extra=None):
     + "Connection: ".encode() + connection_header + "\r\n".encode()
     + "\r\n".encode() + body)
         return response
-    else:
+    else:  #used for 405 method not allowed 
         response = ("HTTP/1.1 ".encode() + status + " ".encode() + reason + "\r\n".encode()
     + "Date: ".encode() + date + "\r\n".encode()
     + "Server: ".encode() + server_string + "\r\n".encode()
@@ -242,7 +243,6 @@ def build_response(status, reason, body, content_type, extra=None):
 
 
 def handle_request(head, root):
-    #print("handle_request called", flush=True)
     """TASK 1, extended in tasks 2 and 3. Turn one header block into a complete
     response.
     Task 1: 200 and 404. Task 2: HEAD, which carries no body, and Content-Type
@@ -250,11 +250,11 @@ def handle_request(head, root):
     no Host), 405 (POST and the other known methods, with Allow: GET, HEAD) and
     501 (a token that is not an HTTP method)."""
 
-    #convert bytes to string and split on whitespace
 
+    #if message not parsed correctly due to bad request, handle that specific response
     try:
-        method,target,version,headers=parse_request(head)
-    except ValueError:
+        method,target,version,headers=parse_request(head) 
+    except ValueError: #build the 40 bad request response
         #handle 400 Bad Request
         status=str(400)
         reason="Bad Request"
@@ -280,7 +280,7 @@ def handle_request(head, root):
 
     path=resolve_path(root,target) #build a proper path
 
-    if (method == "GET"):
+    if (method == "GET"): #build get response
         if path is None or not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
@@ -288,22 +288,22 @@ def handle_request(head, root):
             content_type="text/plain"
             return build_response(status,reason,body,content_type,"GET")
 
-        else:
+        else: #everything went well - build a 200 OK response
             #build a 200 response
             status=str(200)
             reason="OK"
             
             #open file and read contents and place them in body variable
-            opened_file=open(path,"rb")
+            opened_file=open(path,"rb") #open in read bytes mode
             body=opened_file.read()
             opened_file.close()
 
-            content_type, encoding=mimetypes.guess_type(path)
-            if (content_type==None):
+            content_type, encoding=mimetypes.guess_type(path) #look at file extenstion and determine type (e.g: png, jpg,pdf)
+            if (content_type==None): #if type cannot be determined, set type to application/octet-stream
                 content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"GET")
 
-    elif (method=="HEAD"):
+    elif (method=="HEAD"): #handle cases within a get response (either 404 or 200)
         if path is None or not (os.path.isfile(path)): #file not found, build 404 response
             status=str(404)
             reason="Not Found"
@@ -317,11 +317,12 @@ def handle_request(head, root):
             reason="OK"
             
             #open file and read contents and place them in body variable
-            opened_file=open(path,"rb")
+            opened_file=open(path,"rb") #open in read bytes mode
             body=opened_file.read()
             opened_file.close()
-            content_type, encoding=mimetypes.guess_type(path)
-            if (content_type==None):
+
+            content_type, encoding=mimetypes.guess_type(path) #determine file type from file extension
+            if (content_type==None): #if file type cannot be determined, set it to application/octet-stream
                 content_type="application/octet-stream"
             return build_response(status,reason,body,content_type,"HEAD")
     
@@ -339,17 +340,17 @@ def handle_connection(conn, root):
     recv_request_head. Task 5: after each response, increment requests_served
     under counter_lock and print 'served <n>' to stderr, where n is the value
     this request produced, read inside the same lock that incremented it."""
-    global requests_served
+    global requests_served #requests_served causes an error without declaring it as global
     while 1:
         message = recv_request_head(conn)
         if message is None:
-            break
+            break #stop serving client if it has disconnected
         response = handle_request(message,root) #send message received to handle_request
-        conn.sendall(response) #send the response back
-        with counter_lock:
+        conn.sendall(response) #send back the response that we received from handle_request 
+        with counter_lock: #using a lock, increment the number of requests served
             requests_served+=1
             mine=requests_served
-        print("served %d" % mine,file=sys.stderr,flush=True)
+        print("served %d" % mine,file=sys.stderr,flush=True) 
 
 
 
@@ -360,15 +361,16 @@ def worker(work_queue, root):
     Nothing before task 5 calls this, and main must not start any worker threads
     until you write it."""
     while 1:
-        client=work_queue.get()
-        handle_connection(client,root)
-        client.close()
+        client=work_queue.get() #get a client connection from the queue
+        handle_connection(client,root) #pass the client to handle_connection
+        client.close() #close the client when done
         
 
 
 
 
 def main(argv=None):
+    ###TO DO: may want to handle invalid arguments
     """TASK 1, replaced in task 5. Bind 127.0.0.1 on the requested port, listen,
     print the port line below, then serve connections.
     Task 1: accept one connection at a time and pass each to handle_connection.
@@ -378,15 +380,15 @@ def main(argv=None):
     # exactly as written, immediately after listen(), and keep flush=True.
     #     print("Listening on port %d" % listener.getsockname()[1], flush=True)
 
-    workers_queue=queue.Queue()
+    workers_queue=queue.Queue() #create the queue of workers
 
-    args=parse_args(argv)
+    args=parse_args(argv) #parse the arguments
     server_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
     server_socket.bind(("127.0.0.1",args.port)) #bind the socket to ip address 127.0.0.1 and given port number
-    server_socket.listen(1) 
-    print("Listening on port %d" % server_socket.getsockname()[1], flush=True)
+    server_socket.listen(1) #start listening
+    print("Listening on port %d" % server_socket.getsockname()[1], flush=True) #prints on success
 
-    for i in range (args.workers):
+    for i in range (args.workers): #create the worker threads
         thread = threading.Thread(target=worker, args=(workers_queue,args.root))
         thread.start()
     
