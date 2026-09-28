@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Date: Mon, 28 Sep 2026 02:12:12 GMT
+Server: cmpt371/1.0
+Content-Type: application/octet-stream
+Content-Length: 200000
+Connection: keep-alive
+

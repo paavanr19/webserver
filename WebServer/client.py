@@ -22,6 +22,10 @@ def parse_args(argv):
     args_parser.add_argument("--out",action="append",type=str,required=True)
 
     args = args_parser.parse_args(argv) #store parsed arguments in args object
+    if len(args.path) != len(args.out):
+        print("ERROR: number of paths does not equal number of output files. Exiting program.")
+        sys.exit()
+    
     return args
 
 
@@ -67,25 +71,27 @@ def parse_head(head):
 
     head=head.decode()
     response_lines=head.split("\r\n\r\n")[0] #cut off body
-    response=response_lines.split("\r\n") 
-    response_line_1=response[0].split(" ")
-    status_code=response_line_1[1]
-    reason=""
-    i=2
+    response=response_lines.split("\r\n")  #split rest of message
+    response_line_1=response[0].split(" ") #store the firt line of the response
+    status_code=response_line_1[1] #extract the status code from the first line of the response
+    reason="" #empty buffer for reason since it may be more than one word
 
+
+    i=2
     #get the reason
     while i<(len(response_line_1)):
-        reason+=response_line_1[i]
-        if (i != (len(response_line_1))-1):
-            reason+=" "
-        i+=1
+        reason+=response_line_1[i] #add the current word to the string
+        if (i != (len(response_line_1))-1): #if this is not the last word add a space
+            reason+=" " #add a space between words
+        i+=1 #advance pointer to next word
     
     headers_dict={}
 
-    header_lines=response[1:]
+    header_lines=response[1:] #the headers are everything after the status code+reason line and before the body
     for header in header_lines:
-        if (len(header)==0):
+        if (len(header)==0): #don't add empty header lines to the dictionary
             continue
+        #split the lines and add them to the dictionary
         header_title=header.split(":",1)[0]
         header_value=header.split(":",1)[1]
         header_title=header_title.lower()
@@ -103,23 +109,23 @@ def read_body(sock, length, pending):
     for a full minute, so reading to EOF fails all four, not just the timing
     one."""
 
-    body="".encode()
-    temp_pending="".encode()
+    body="".encode() #start with an empty buffer for body
+    temp_pending="".encode() #will store leftover bytes a
     i=0
-    while 1:
-        if i==length:
-            temp_pending=pending[i:]
-            pending=temp_pending
+    while 1: #keep looping until current body has been collected
+        if i==length: #check if we have collected the required number of bytes
+            temp_pending=pending[i:] #leftover bytes are everything after what we've collected
+            pending=temp_pending 
             return body,pending
-        if (len(pending))<length:
-            received_msg=sock.recv(4096)
-            if (received_msg==b""):
+        if (len(pending))<length: #if we haven't yet collected required number of bytes
+            received_msg=sock.recv(4096) #receive more
+            if (received_msg==b""): #if we receive an empty msg return  None
                 return None
             else:
-                pending+=received_msg
-        else:
-            while i<(length):
-                body+=pending[i:i+1]
+                pending+=received_msg #add received message to pending
+        else: #pending has enough bytes for the entire body
+            while i<(length):  #extract the body
+                body+=pending[i:i+1] #add one byte to the body
                 i+=1
         
 
@@ -132,29 +138,29 @@ def main(argv=None):
     whatever is left in the buffer past one body is the start of the next
     response."""
 
-    args=parse_args(argv)
+    args=parse_args(argv) #parse the arguments and store them in args
 
     client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) #create the socket object
     client_socket.connect((args.host,args.port)) #connect to the server socket
 
-    pending="".encode()
-    for i in range(len(args.path)):
-        send_request(client_socket,args.host,args.path[i])
-        read_head_output=read_head(client_socket, pending)
-        if read_head_output is None:
+    pending="".encode() #create empty bytes buffer for messages
+    for i in range(len(args.path)): #loop through every path
+        send_request(client_socket,args.host,args.path[i]) #send a GET request for the path
+        read_head_output=read_head(client_socket, pending) #read the response headers
+        if read_head_output is None: #if server disconnected exit with -1
             return -1
-        headers,pending=read_head_output
-        status_code,reason,headers_dict=parse_head(headers)
-        content_length=int(headers_dict["content-length"])
-        read_body_output=read_body(client_socket,content_length,pending)
-        if read_body_output is None:
+        headers,pending=read_head_output #store headers and leftover bytes
+        status_code,reason,headers_dict=parse_head(headers) #parse the status code, headers and response
+        content_length=int(headers_dict["content-length"]) #store content-length in a variable for printing
+        read_body_output=read_body(client_socket,content_length,pending) #read the output of the vody into read_body_output
+        if read_body_output is None: #if server disconnected return -1
             return -1
-        body,pending=read_body_output
-        print_str=status_code+" "+reason+" "+str(content_length)+" bytes"
-        print(print_str)
-        with open(args.out[i],"wb") as file:
+        body,pending=read_body_output #store body and pending bytes
+        print_str=status_code+" "+reason+" "+str(content_length)+" bytes" #print the status code,reason and the number of bytes read
+        print(print_str) #print info to the terminal
+        with open(args.out[i],"wb") as file: #Write the body to the specified file
             file.write(body)
-    return 0
+    return 0 #return 0 on success
 
 
 

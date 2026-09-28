@@ -1,0 +1,2 @@
+A plain text file, so you can check that Content-Type comes back as
+text/plain rather than text/html or application/octet-stream.

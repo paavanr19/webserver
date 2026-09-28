@@ -341,8 +341,12 @@ def handle_connection(conn, root):
     under counter_lock and print 'served <n>' to stderr, where n is the value
     this request produced, read inside the same lock that incremented it."""
     global requests_served #requests_served causes an error without declaring it as global
+    conn.settimeout(5) #if the client sends nothing for five seconds, close the connection
     while 1:
-        message = recv_request_head(conn)
+        try: #if client is active receuve message
+            message = recv_request_head(conn)
+        except socket.timeout: #if client is idle end connection
+            break
         if message is None:
             break #stop serving client if it has disconnected
         response = handle_request(message,root) #send message received to handle_request
